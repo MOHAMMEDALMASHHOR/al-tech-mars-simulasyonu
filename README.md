@@ -2,9 +2,15 @@
 
 Welcome to the Al-Tech Mars Exploration project! This repository contains a fully automated, closed-loop AI software suite designed to autonomously identify critical Initial In-Situ Resource Utilization (ISRU) elements—such as Water Ice and Regolith—and deploy an autonomous rover to collect them. 
 
-## 🎥 Dashboard Interface Demo
-<video src="demo.mp4" width="100%" controls></video>
-*(Real-time Interactive Web Dashboard connected to the backend via WebSockets. It tracks visual inferences, maps dynamic ISRU clusters, and actively assigns missions to autonomous rovers.)*
+## 📸 Project Demonstration
+
+### 🌍 Gazebo Simulation Environment
+![Mars Rover Simulation](Simulation.jpeg)
+*(Left: The Python Backend routing YOLO inferences via `PyMAVLink`. Right: The dynamic Gazebo simulation featuring the Martian surface, Water Ice (white cylinders), and Regolith fields (brown spheres).)*
+
+### 🛸 Real-Time Dashboard UI
+![Interactive Dashboard](Presentation1.gif)
+*(Our fully autonomous telemetry dashboard listening live to FastAPI WebSockets. It dynamically maps ISRU resources upon drone detection and visually tracks the autonomous rover fleets.)*
 
 ## 🚀 How The System Works (Data Flow Pipeline)
 Our system connects a simulated physical rover with an AI brain and a UI in real-time. Here is the exact step-by-step logic loop running at all times:
