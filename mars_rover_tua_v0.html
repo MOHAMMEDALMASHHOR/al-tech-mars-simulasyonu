@@ -442,7 +442,12 @@ function resetMission(){
     let c1=rp(),c2=rp();
     while(Math.hypot(c1.x-c2.x,c1.y-c2.y)<260){c2=rp();}
 
-    // Real resources will be dynamically populated via WebSocket connection to the YOLO backend
+    function ar(x,y,t){resources.push({x,y,type:t,claimed:false,disc:false});}
+    ar(c1.x+20,c1.y+12,'REG'); ar(c1.x-25,c1.y-16,'ICE');
+    ar(c1.x-8, c1.y+30,'REG'); ar(c1.x+32,c1.y-10,'ICE');
+    ar(c2.x+18,c2.y-28,'ICE'); ar(c2.x-22,c2.y+18,'REG');
+    ar(c2.x+38,c2.y+8, 'ICE'); ar(c2.x-12,c2.y-12,'REG');
+    for(let i=0;i<8;i++){const p=rp();ar(p.x,p.y,Math.random()>.5?'REG':'ICE');}
 
     rovers.forEach(r=>{
         r.x=0;r.y=0;r.battery=100;r.theta=0;r.target=null;
@@ -927,32 +932,6 @@ setInterval(()=>{
 
 resetMission();
 loop();
-
-// ===========================================
-// Real-time WebSocket connection to YOLO Backend
-// ===========================================
-const wsURL = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws';
-const ws = new WebSocket(wsURL);
-
-ws.onmessage = function(event) {
-    const data = JSON.parse(event.data);
-    if (data.event === "new_resource") {
-        // Map Python types to JS types
-        let mappedType = (data.type === "Water_Ice") ? "ICE" : "REG";
-        
-        // Ensure no duplicate insertion near same coords within client
-        let duplicate = resources.find(r => Math.hypot(r.x - data.x, r.y - data.y) < 2.0);
-        if (!duplicate) {
-            // disc is set to true immediately because YOLO has 'scanned' it
-            resources.push({x: data.x, y: data.y, type: mappedType, claimed: false, disc: true});
-            analyzeSettlements();
-        }
-    }
-};
-
-ws.onopen = function() {
-    console.log("WebSocket connected to Python Backend!");
-};
 </script>
 </body>
 </html>
