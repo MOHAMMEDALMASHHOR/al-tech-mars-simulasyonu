@@ -1,0 +1,115 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <world name="martian_simple_world">
+    <!-- Basic Light -->
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <!-- Martian Gravity -->
+    <gravity>0 0 -3.711</gravity>
+
+    <!-- Simple Orange Ground Plane -->
+    <model name="martian_ground">
+      <static>true</static>
+      <pose>0 0 0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>200 200</size>
+            </plane>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>200 200</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.8 0.4 0.1 1.0</ambient>
+            <diffuse>0.9 0.45 0.15 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Dummy Data: 3 White Ice Regions (Cylinders) -->
+    <model name="ice_1">
+      <static>true</static>
+      <pose>10 10 0.1 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry><cylinder><radius>2</radius><length>0.2</length></cylinder></geometry>
+          <material><ambient>1 1 1 1</ambient><diffuse>1 1 1 1</diffuse></material>
+        </visual>
+        <collision name="collision"><geometry><cylinder><radius>2</radius><length>0.2</length></cylinder></geometry></collision>
+      </link>
+    </model>
+
+    <model name="ice_2">
+      <static>true</static>
+      <pose>-15 5 0.1 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry><cylinder><radius>3</radius><length>0.2</length></cylinder></geometry>
+          <material><ambient>1 1 1 1</ambient><diffuse>1 1 1 1</diffuse></material>
+        </visual>
+        <collision name="collision"><geometry><cylinder><radius>3</radius><length>0.2</length></cylinder></geometry></collision>
+      </link>
+    </model>
+
+    <model name="ice_3">
+      <static>true</static>
+      <pose>5 -20 0.1 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry><cylinder><radius>1.5</radius><length>0.2</length></cylinder></geometry>
+          <material><ambient>1 1 1 1</ambient><diffuse>1 1 1 1</diffuse></material>
+        </visual>
+        <collision name="collision"><geometry><cylinder><radius>1.5</radius><length>0.2</length></cylinder></geometry></collision>
+      </link>
+    </model>
+
+    <!-- Dummy Data: 3 Regolith Spots (Brown Spheres) -->
+    <model name="regolith_1">
+      <static>true</static>
+      <pose>15 -10 0.5 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry><sphere><radius>0.5</radius></sphere></geometry>
+          <material><ambient>0.3 0.1 0.0 1</ambient><diffuse>0.4 0.15 0.05 1</diffuse></material>
+        </visual>
+        <collision name="collision"><geometry><sphere><radius>0.5</radius></sphere></geometry></collision>
+      </link>
+    </model>
+
+    <model name="regolith_2">
+      <static>true</static>
+      <pose>-10 -15 0.5 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry><sphere><radius>0.8</radius></sphere></geometry>
+          <material><ambient>0.3 0.1 0.0 1</ambient><diffuse>0.4 0.15 0.05 1</diffuse></material>
+        </visual>
+        <collision name="collision"><geometry><sphere><radius>0.8</radius></sphere></geometry></collision>
+      </link>
+    </model>
+
+    <model name="regolith_3">
+      <static>true</static>
+      <pose>-5 20 0.5 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry><sphere><radius>0.6</radius></sphere></geometry>
+          <material><ambient>0.3 0.1 0.0 1</ambient><diffuse>0.4 0.15 0.05 1</diffuse></material>
+        </visual>
+        <collision name="collision"><geometry><sphere><radius>0.6</radius></sphere></geometry></collision>
+      </link>
+    </model>
+
+  </world>
+</sdf>

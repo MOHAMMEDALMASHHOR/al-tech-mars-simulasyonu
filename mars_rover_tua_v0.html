@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Al-Tech Otonom Kontrol Mekanizması</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg0:#05080b;--bg1:#090e14;--bg2:#0d1520;--bg3:#111c2a;
+    --b0:#1a2535;--b1:#243246;--b2:#2e4060;
+    --w0:#f0f4f8;--w1:#c8d4e0;--w2:#9ab4cc;--w3:#6a8ba8;
+    --ac:#5b9bd5;--ac2:#3a7abf;
+    --ok:#4ab870;--warn:#c8922a;--crit:#c04040;--storm:#b87820;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;width:100%;overflow:hidden;background:var(--bg0);}
+body{font-family:'IBM Plex Sans',sans-serif;color:var(--w0);display:flex;flex-direction:column;}
+
+/* TOP BAR */
+#topbar{
+    height:52px;background:var(--bg2);border-bottom:1px solid var(--b1);
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 24px;flex-shrink:0;position:relative;z-index:100;
+}
+.tb-brand{display:flex;align-items:baseline;gap:12px;}
+.tb-name{
+    font-family:'IBM Plex Sans Condensed',sans-serif;
+    font-size:1.1rem;font-weight:700;letter-spacing:3px;
+    color:var(--w0);text-transform:uppercase;
+}
+.tb-sub{
+    font-family:'IBM Plex Mono',monospace;font-size:0.68rem;
+    color:var(--w2);letter-spacing:1px;
+    border-left:1px solid var(--b2);padding-left:12px;
+}
+.tb-center{
+    position:absolute;left:50%;transform:translateX(-50%);
+    font-family:'IBM Plex Mono',monospace;font-size:0.72rem;
+    color:var(--w2);display:flex;gap:20px;align-items:center;
+}
+.tb-center b{color:var(--w0);font-weight:600;}
+.tb-right{
+    display:flex;align-items:center;gap:10px;
+    font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--w1);
+}
+.pill{
+    display:flex;align-items:center;gap:7px;
+    background:var(--bg3);border:1px solid var(--b1);
+    padding:4px 11px;border-radius:2px;color:var(--w1);
+}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 7px var(--ok);}
+.sdot.storm{background:var(--storm);box-shadow:0 0 7px var(--storm);}
+.sdot.blink{animation:blink 1.1s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.2;}}
+
+/* MAIN */
+#main{flex:1;display:flex;overflow:hidden;}
+
+/* MAP */
+#map-panel{flex:1;position:relative;overflow:hidden;}
+#marsMap{display:block;width:100%;height:100%;cursor:crosshair;}
+
+/* MAP UI CHIPS */
+#map-tl{
+    position:absolute;top:14px;left:14px;z-index:50;
+    display:flex;flex-direction:column;gap:5px;
+    font-family:'IBM Plex Mono',monospace;font-size:0.75rem;
+}
+.chip{
+    background:rgba(5,8,11,0.92);border:1px solid var(--b1);
+    padding:5px 13px;border-radius:2px;
+    display:flex;gap:10px;align-items:center;
+}
+.chip .cl{color:var(--w2);font-size:0.72rem;letter-spacing:0.5px;}
+.chip .cv{color:var(--w0);font-weight:600;font-size:0.78rem;}
+
+#legend{
+    position:absolute;bottom:60px;left:14px;z-index:50;
+    background:rgba(5,8,11,0.92);border:1px solid var(--b1);
+    padding:11px 15px;border-radius:2px;
+    font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--w1);
+}
+.leg{display:flex;align-items:center;gap:9px;margin-bottom:6px;}
+.leg:last-child{margin-bottom:0;}
+.lsq{width:13px;height:13px;border-radius:1px;flex-shrink:0;}
+
+#zoom-wrap{
+    position:absolute;bottom:14px;right:14px;z-index:50;
+    display:flex;flex-direction:column;gap:3px;align-items:center;
+}
+.zbtn{
+    width:32px;height:32px;background:rgba(5,8,11,0.92);
+    border:1px solid var(--b1);color:var(--w0);
+    font-size:1.15rem;cursor:pointer;border-radius:2px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;transition:border-color .15s,color .15s;
+}
+.zbtn:hover{border-color:var(--ac);color:var(--ac);}
+#zlbl{
+    font-family:'IBM Plex Mono',monospace;font-size:0.66rem;
+    color:var(--w2);text-align:center;padding:2px 0;
+}
+
+/* CONTROL PANEL */
+#ctrl{
+    width:420px;flex-shrink:0;display:flex;flex-direction:column;
+    background:var(--bg1);border-left:1px solid var(--b1);overflow:hidden;
+}
+.cp-head{
+    padding:16px 20px 12px;background:var(--bg2);
+    border-bottom:1px solid var(--b1);flex-shrink:0;
+}
+.cp-title{
+    font-family:'IBM Plex Sans Condensed',sans-serif;
+    font-size:1.1rem;font-weight:700;letter-spacing:2px;
+    color:var(--w0);text-transform:uppercase;margin-bottom:3px;
+}
+.cp-sub{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.66rem;color:var(--w2);letter-spacing:1px;
+}
+.cpsec{border-bottom:1px solid var(--b0);flex-shrink:0;}
+.cptitle{
+    padding:11px 20px 7px;
+    font-family:'IBM Plex Sans Condensed',sans-serif;
+    font-size:0.85rem;font-weight:600;letter-spacing:2px;
+    text-transform:uppercase;color:var(--w1);
+}
+
+/* Buttons */
+.brow{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 20px 13px;}
+.brow.single{grid-template-columns:1fr;}
+.cpb{
+    padding:10px 12px;background:var(--bg3);border:1px solid var(--b1);
+    color:var(--w0);cursor:pointer;border-radius:2px;
+    font-family:'IBM Plex Sans Condensed',sans-serif;
+    font-size:0.9rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;
+    transition:all .15s;
+}
+.cpb:hover{background:var(--bg2);border-color:var(--b2);}
+.cpb.primary{border-color:var(--ac2);}
+.cpb.primary:hover{background:rgba(58,122,191,.12);}
+.cpb.danger{border-color:var(--crit);}
+.cpb.danger:hover{background:rgba(192,64,64,.1);}
+.cpb.warn{border-color:var(--warn);}
+.cpb.warn:hover{background:rgba(200,146,42,.1);}
+.cpb.warn.active{background:var(--storm);color:var(--bg0);border-color:var(--storm);animation:blink 1s infinite;}
+
+/* Inventory */
+.inv-list{padding:0 20px 13px;display:flex;flex-direction:column;gap:6px;}
+.inv-row{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--bg2);border:1px solid var(--b0);
+    padding:8px 14px;border-radius:2px;
+}
+.inv-n{
+    font-family:'IBM Plex Sans Condensed',sans-serif;
+    font-size:0.97rem;font-weight:600;letter-spacing:1px;color:var(--w0);
+}
+.inv-u{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--w2);margin-top:2px;}
+.inv-v{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:1rem;font-weight:600;color:var(--w0);min-width:40px;text-align:right;
+}
+
+/* Settlements */
+.sett-body{padding:0 20px 13px;max-height:90px;overflow-y:auto;}
+.si{
+    display:flex;justify-content:space-between;
+    font-family:'IBM Plex Mono',monospace;font-size:0.7rem;
+    color:var(--w0);padding:4px 0;border-bottom:1px solid var(--b0);
+}
+.si:last-child{border-bottom:none;}
+.si .sk{color:var(--w2);}
+.se{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--w2);}
+
+/* Vehicle scroll */
+.vtitle{padding:10px 20px 7px;flex-shrink:0;}
+#vscroll{flex:1;overflow-y:auto;padding:8px 14px;}
+#vscroll::-webkit-scrollbar{width:3px;}
+#vscroll::-webkit-scrollbar-track{background:var(--bg0);}
+#vscroll::-webkit-scrollbar-thumb{background:var(--b1);border-radius:2px;}
+
+/* Vehicle card */
+.vcard{
+    background:var(--bg2);border:1px solid var(--b0);
+    border-radius:2px;padding:11px 12px 10px 15px;
+    margin-bottom:8px;position:relative;overflow:hidden;
+}
+.vaccent{position:absolute;top:0;left:0;bottom:0;width:3px;}
+.vhead{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--b0);
+}
+.vname{
+    font-family:'IBM Plex Sans Condensed',sans-serif;
+    font-size:1rem;font-weight:700;letter-spacing:1px;color:var(--w0);
+}
+.vbat{font-family:'IBM Plex Mono',monospace;font-size:0.75rem;font-weight:600;}
+.vgrid{
+    display:grid;grid-template-columns:auto 1fr auto 1fr;
+    gap:3px 10px;margin-bottom:7px;
+    font-family:'IBM Plex Mono',monospace;font-size:0.68rem;
+}
+.vgl{color:var(--w2);}
+.vgv{color:var(--w0);font-weight:500;}
+.batbar{height:3px;background:var(--b0);border-radius:1px;overflow:hidden;margin-bottom:7px;}
+.batfill{height:100%;border-radius:1px;transition:width .5s,background .5s;}
+.vstatus{
+    display:flex;justify-content:space-between;align-items:center;
+}
+.vstt{
+    display:flex;align-items:center;gap:6px;
+    font-family:'IBM Plex Sans Condensed',sans-serif;
+    font-size:0.85rem;font-weight:600;letter-spacing:1px;
+}
+.vdot{width:7px;height:7px;border-radius:50%;}
+.vmode{
+    font-family:'IBM Plex Mono',monospace;font-size:0.62rem;
+    color:var(--w2);background:var(--bg3);
+    border:1px solid var(--b0);padding:2px 8px;border-radius:1px;
+}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+    <div class="tb-brand">
+        <div class="tb-name">Al-Tech</div>
+        <div class="tb-sub">Otonom Kontrol Mekanizması — Mars Görev 01</div>
+    </div>
+    <div class="tb-center">
+        <b id="tb-sol">SOL 001</b>
+        <b id="tb-time">--:--:-- MSD</b>
+        <span>GECİKME: <b id="tb-delay">14m 27s</b></span>
+        <span>MAVLink 2.0</span>
+    </div>
+    <div class="tb-right">
+        <div class="pill">
+            <div class="sdot" id="sdot"></div>
+            <span id="slabel">SİSTEM AKTİF</span>
+        </div>
+        <div class="pill">
+            DÜNYA: <b id="comm" style="color:var(--ok);margin-left:6px;">BAĞLI</b>
+        </div>
+    </div>
+</div>
+
+<div id="main">
+    <div id="map-panel">
+        <canvas id="marsMap"></canvas>
+        <div id="map-tl">
+            <div class="chip"><span class="cl">TARAMA</span><span class="cv" id="sc-disp">0 m / 500 m</span></div>
+            <div class="chip"><span class="cl">AKTİF ARAÇ</span><span class="cv" id="ac-disp">3</span></div>
+            <div class="chip"><span class="cl">ZOOM</span><span class="cv" id="zm-disp">—</span></div>
+            <div class="chip"><span class="cl">KONUM</span><span class="cv" id="pos-disp">—</span></div>
+        </div>
+        <div id="legend">
+            <div class="leg"><div class="lsq" style="background:#c49a6c;"></div>Regolith Yatağı</div>
+            <div class="leg"><div class="lsq" style="background:#6aaae0;"></div>Su Buzulu</div>
+            <div class="leg"><div class="lsq" style="background:rgba(74,184,112,0.25);border:1px solid #4ab870;"></div>Uygun Yerleşim Alanı</div>
+            <div class="leg"><div class="lsq" style="background:#0d3460;border:2px solid #5b9bd5;"></div>Ana İstasyon</div>
+            <div class="leg"><div class="lsq" style="background:rgba(55,42,30,0.7);border:1px solid #6a5a48;"></div>Krater</div>
+        </div>
+        <div id="zoom-wrap">
+            <button class="zbtn" onclick="zoomIn()">+</button>
+            <div id="zlbl">—</div>
+            <button class="zbtn" onclick="zoomOut()">−</button>
+        </div>
+    </div>
+
+    <div id="ctrl">
+        <div class="cp-head">
+            <div class="cp-title">Kontrol Merkezi</div>
+            <div class="cp-sub">TUA — AL-TECH OTONOM SİSTEM · ANA İSTASYON [0, 0]</div>
+        </div>
+
+        <div class="cpsec">
+            <div class="cptitle">Görev Kontrolü</div>
+            <div class="brow">
+                <button class="cpb primary" id="btn-m" onclick="toggleMission()">GÖREVE BAŞLA</button>
+                <button class="cpb danger" onclick="resetMission()">SİSTEM SIFIRLA</button>
+            </div>
+            <div class="brow single">
+                <button class="cpb warn" id="btn-s" onclick="toggleStorm()">KUM FIRTINASI SİMÜLASYONU</button>
+            </div>
+        </div>
+
+        <div class="cpsec">
+            <div class="cptitle">Ana İstasyon Envanteri</div>
+            <div class="inv-list">
+                <div class="inv-row">
+                    <div><div class="inv-n">Regolith</div><div class="inv-u">TOPLANAN MALZEME — kg</div></div>
+                    <div class="inv-v" id="iv-r">0</div>
+                </div>
+                <div class="inv-row">
+                    <div><div class="inv-n">Su Buzulu</div><div class="inv-u">SU KAYNAĞI — Litre</div></div>
+                    <div class="inv-v" id="iv-i">0</div>
+                </div>
+                <div class="inv-row">
+                    <div><div class="inv-n">Üretilen Tuğla</div><div class="inv-u">İNŞAAT MALZEMESİ — adet</div></div>
+                    <div class="inv-v" id="iv-b">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cpsec">
+            <div class="cptitle">Yerleşim Alanı Analizi</div>
+            <div class="sett-body" id="sett-body">
+                <div class="se">Harita taraması bekleniyor…</div>
+            </div>
+        </div>
+
+        <div class="cptitle vtitle">Araç Telemetrisi</div>
+        <div id="vscroll"></div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('marsMap');
+const ctx    = canvas.getContext('2d');
+
+const SCAN_LIMIT = 500;
+
+let isRunning=false, isStorm=false, isMapScanned=false;
+let currentScanRadius=0;
+let inventory={reg:0,ice:0,bricks:0};
+let resources=[], settlementAreas=[], craters=[];
+
+// Camera
+let camX=0, camY=0, zoom=1;
+let panning=false, psx=0, psy=0, csx=0, csy=0;
+
+function resize(){
+    const p=document.getElementById('map-panel');
+    canvas.width=p.clientWidth; canvas.height=p.clientHeight;
+}
+window.addEventListener('resize',()=>{resize();applyInitZoom();});
+resize();
+
+function w2s(wx,wy){
+    return [canvas.width/2+(wx-camX)*zoom, canvas.height/2-(wy-camY)*zoom];
+}
+function s2w(sx,sy){
+    return [(sx-canvas.width/2)/zoom+camX, -(sy-canvas.height/2)/zoom+camY];
+}
+
+// Zoom
+function applyInitZoom(){
+    const px=Math.min(canvas.width,canvas.height);
+    zoom=px/(SCAN_LIMIT*2);
+    camX=0;camY=0;
+    updZoom();
+}
+function setZoom(z){zoom=Math.max(0.15,Math.min(10,z));updZoom();}
+function zoomIn(){setZoom(zoom*1.25);}
+function zoomOut(){setZoom(zoom/1.25);}
+function updZoom(){
+    const t=zoom.toFixed(2)+'x';
+    document.getElementById('zm-disp').textContent=t;
+    document.getElementById('zlbl').textContent=t;
+}
+
+canvas.addEventListener('wheel',e=>{
+    e.preventDefault();
+    setZoom(zoom*(e.deltaY>0?0.85:1.18));
+},{passive:false});
+canvas.addEventListener('mousedown',e=>{
+    panning=true;psx=e.clientX;psy=e.clientY;csx=camX;csy=camY;
+    canvas.style.cursor='grabbing';
+});
+canvas.addEventListener('mousemove',e=>{
+    const [wx,wy]=s2w(e.offsetX,e.offsetY);
+    document.getElementById('pos-disp').textContent=Math.round(wx)+'m, '+Math.round(wy)+'m';
+    if(!panning)return;
+    camX=csx-(e.clientX-psx)/zoom;
+    camY=csy+(e.clientY-psy)/zoom;
+});
+canvas.addEventListener('mouseup',  ()=>{panning=false;canvas.style.cursor='crosshair';});
+canvas.addEventListener('mouseleave',()=>{panning=false;});
+
+// Craters — pre-generated, revealed only when scanner passes over
+function genCraters(){
+    craters=[];
+    for(let i=0;i<60;i++){
+        craters.push({
+            x:(Math.random()-0.5)*1200,
+            y:(Math.random()-0.5)*1200,
+            r:7+Math.random()*30,
+            d:0.35+Math.random()*0.65,
+            rev:false
+        });
+    }
+}
+
+// Mission
+function toggleMission(){
+    isRunning=!isRunning;
+    document.getElementById('btn-m').textContent=isRunning?'GÖREVI DURAKLAT':'GÖREVE BAŞLA';
+}
+
+function toggleStorm(){
+    isStorm=!isStorm;
+    const btn=document.getElementById('btn-s');
+    btn.classList.toggle('active',isStorm);
+    btn.textContent=isStorm?'⚠ FIRTINA AKTİF — YÖNETİLİYOR':'KUM FIRTINASI SİMÜLASYONU';
+    document.getElementById('sdot').classList.toggle('storm',isStorm);
+    document.getElementById('sdot').classList.toggle('blink',isStorm);
+    document.getElementById('slabel').textContent=isStorm?'FIRTINA UYARISI':'SİSTEM AKTİF';
+
+    if(isStorm){
+        rovers.forEach(r=>{
+            if(r.state!=='ŞARJDA'){r.state='FIRTINA_DÖNÜŞ';r.target={x:0,y:0};}
+        });
+    } else {
+        rovers.forEach(r=>{
+            if(r.state==='FIRTINA_DÖNÜŞ'||r.state==='FIRTINA_BEKLİYOR'){
+                r.state=r.role==='KEŞF'?(isMapScanned?'TAMAMLANDI':'TARAMA'):'BEKLEMEDE';
+                r.target=null;
+            }
+        });
+    }
+}
+
+function resetMission(){
+    inventory={reg:0,ice:0,bricks:0};
+    settlementAreas=[];resources=[];isMapScanned=false;currentScanRadius=0;
+    isStorm=false;
+    explorerPath.length=0;
+    lastPathRecord=0;
+    document.getElementById('btn-s').classList.remove('active');
+    document.getElementById('btn-s').textContent='KUM FIRTINASI SİMÜLASYONU';
+    document.getElementById('sdot').classList.remove('storm','blink');
+    document.getElementById('slabel').textContent='SİSTEM AKTİF';
+    document.getElementById('sett-body').innerHTML='<div class="se">Harita taraması bekleniyor…</div>';
+
+    genCraters();
+
+    const R=460;
+    function rp(){return{x:(Math.random()-.5)*R*2,y:(Math.random()-.5)*R*2};}
+    let c1=rp(),c2=rp();
+    while(Math.hypot(c1.x-c2.x,c1.y-c2.y)<260){c2=rp();}
+
+    // Real resources will be dynamically populated via WebSocket connection to the YOLO backend
+
+    rovers.forEach(r=>{
+        r.x=0;r.y=0;r.battery=100;r.theta=0;r.target=null;
+        r.state=r.role==='KEŞF'?'TARAMA':'BEKLEMEDE';
+        r.missionComplete=false;
+    });
+    isRunning=true;
+    document.getElementById('btn-m').textContent='GÖREVI DURAKLAT';
+    applyInitZoom();
+}
+
+function analyzeSettlements(){
+    const disc=resources.filter(r=>r.disc);
+    const vis=new Set();const areas=[];
+    for(let i=0;i<disc.length;i++){
+        if(vis.has(i))continue;
+        const cl=[disc[i]];vis.add(i);
+        for(let j=0;j<disc.length;j++){
+            if(vis.has(j))continue;
+            if(Math.hypot(disc[i].x-disc[j].x,disc[i].y-disc[j].y)<210){cl.push(disc[j]);vis.add(j);}
+        }
+        if(cl.length>=3)areas.push(cl);
+    }
+    settlementAreas=areas;
+    const el=document.getElementById('sett-body');
+    if(!areas.length){el.innerHTML='<div class="se">En az 3 yakın kaynak gerekli…</div>';return;}
+    el.innerHTML=areas.map((a,i)=>{
+        const ax=Math.round(a.reduce((s,p)=>s+p.x,0)/a.length);
+        const ay=Math.round(a.reduce((s,p)=>s+p.y,0)/a.length);
+        const nr=a.filter(p=>p.type==='REG').length;
+        const ni=a.filter(p=>p.type==='ICE').length;
+        return`<div class="si"><span>YERLEŞİM ${i+1}</span><span class="sk">[${ax}m, ${ay}m]</span><span>${nr}R/${ni}I</span></div>`;
+    }).join('');
+}
+
+// Real spiral path tracking — stores actual positions ALT has visited
+const explorerPath = [];
+const EXPLORER_DETECT_RADIUS = 60; // spiral sarım aralığı ~113m, sensör menzili yarısı
+
+function explorerHasPassed(px, py){
+    // Tarama dairesi içinde mi kontrol et
+    return Math.hypot(px, py) <= currentScanRadius;
+}
+
+// Her saniye koordinat kaydı için zamanlayıcı
+let lastPathRecord = 0;
+
+class Rover{
+    constructor(id,name,ac,speed,role){
+        this.id=id;this.name=name;this.ac=ac;this.speed=speed;this.role=role;
+        this.x=0;this.y=0;this.battery=100;this.theta=0;
+        this.state=role==='KEŞF'?'TARAMA':'BEKLEMEDE';this.target=null;
+        this.missionComplete=false;
+    }
+    update(){
+        if(!isRunning)return;
+        if(isStorm&&this.state!=='FIRTINA_DÖNÜŞ'&&this.state!=='FIRTINA_BEKLİYOR'&&this.state!=='ŞARJDA'){
+            this.state='FIRTINA_DÖNÜŞ';this.target={x:0,y:0};
+        }
+        if(this.state!=='ŞARJDA'&&(Math.abs(this.x)>1||Math.abs(this.y)>1)){this.battery-=0.006;}
+        if(this.battery<20&&this.state!=='BATARYA_DÖNÜŞ'&&this.state!=='ŞARJDA'&&!isStorm&&this.state!=='TAMAMLANDI'){
+            this.state='BATARYA_DÖNÜŞ';this.target={x:0,y:0};
+        }
+
+        // EXPLORER — spiral until 500m then announce mission complete and return
+        if(this.role==='KEŞF'&&this.state==='TARAMA'){
+            const r=18*this.theta;
+            currentScanRadius=r;
+
+            // Her 1 metrede bir koordinat kaydet
+            if(explorerPath.length===0||Math.hypot(this.x-explorerPath[explorerPath.length-1].x,this.y-explorerPath[explorerPath.length-1].y)>=1){
+                explorerPath.push({x:this.x,y:this.y});
+            }
+
+            // Reveal craters within scan circle
+            craters.forEach(c=>{
+                if(!c.rev&&Math.hypot(c.x,c.y)<=r+15)c.rev=true;
+            });
+            // Reveal resources only if explorer has physically passed near them
+            resources.forEach(res=>{
+                if(!res.disc&&explorerHasPassed(res.x,res.y)){
+                    res.disc=true;analyzeSettlements();
+                }
+            });
+
+            if(r>=SCAN_LIMIT){
+                isMapScanned=true;
+                this.state='GÖREV_TAMAM';
+                this.target={x:0,y:0};
+            } else {
+                this.x=r*Math.cos(this.theta);
+                this.y=r*Math.sin(this.theta);
+                this.theta+=this.speed/(r+15);
+            }
+        }
+
+        // Explorer mission complete — return to base
+        if(this.role==='KEŞF'&&this.state==='GÖREV_TAMAM'){
+            // Movement towards base handled below
+        }
+
+        // COLLECTORS — keep working until all resources claimed
+        if(this.role!=='KEŞF'&&this.state==='BEKLEMEDE'){
+            const myType = this.role; // 'REG' or 'ICE'
+            // Only pick up resources that the explorer has scanned (within scan radius)
+            const res=resources.find(r=>r.disc&&!r.claimed&&r.type===myType&&explorerHasPassed(r.x,r.y));
+            if(res){res.claimed=true;this.target=res;this.state='HEDEFE GİDİYOR';}
+            else if(isMapScanned){
+                // Check if any unclaimed resources remain for this type
+                const remaining=resources.filter(r=>r.type===myType&&!r.claimed&&r.disc);
+                if(remaining.length===0){
+                    this.state='TAMAMLANDI';this.target={x:0,y:0};
+                }
+            }
+        }
+
+        // Movement
+        if(this.target&&this.state!=='ŞARJDA'){
+            const d=Math.hypot(this.target.x-this.x,this.target.y-this.y);
+            if(d>this.speed){
+                this.x+=(this.target.x-this.x)/d*this.speed;
+                this.y+=(this.target.y-this.y)/d*this.speed;
+            } else {
+                this.x=this.target.x;this.y=this.target.y;
+                if(this.state==='HEDEFE GİDİYOR'){
+                    this.state='KAZIYORUM';
+                    setTimeout(()=>{
+                        if(!isStorm&&this.battery>=20){this.state='DÖNÜYOR';this.target={x:0,y:0};}
+                    },2500);
+                } else if(['DÖNÜYOR','BATARYA_DÖNÜŞ','FIRTINA_DÖNÜŞ','TAMAMLANDI','GÖREV_TAMAM'].includes(this.state)){
+                    const was=this.state;
+                    if(was==='DÖNÜYOR'){if(this.role==='REG')inventory.reg+=50;if(this.role==='ICE')inventory.ice+=50;}
+                    if(was==='FIRTINA_DÖNÜŞ'){this.state='FIRTINA_BEKLİYOR';this.target=null;}
+                    else if(was==='GÖREV_TAMAM'){
+                        // Explorer reached base — mark as fully done
+                        this.state='TAMAMLANDI';this.target=null;this.missionComplete=true;
+                    }
+                    else if(this.battery<99){
+                        this.state='ŞARJDA';
+                        setTimeout(()=>{
+                            this.battery=100;
+                            this.state=isStorm?'FIRTINA_BEKLİYOR':(was==='TAMAMLANDI'?'TAMAMLANDI':'BEKLEMEDE');
+                            this.target=null;
+                        },3000);
+                    } else {
+                        this.state=(!isStorm&&was!=='TAMAMLANDI')?'BEKLEMEDE':'TAMAMLANDI';
+                        this.target=null;
+                    }
+                }
+            }
+        }
+        this.draw();this.renderCard();
+    }
+
+    draw(){
+        const [sx,sy]=w2s(this.x,this.y);
+        ctx.save();ctx.translate(sx,sy);
+        // Scale based on zoom — bigger and more readable
+        const sc=Math.min(Math.max(zoom*1.1,0.85),2.8);
+        const bw=20*sc, bh=26*sc;
+
+        // Shadow
+        ctx.fillStyle='rgba(0,0,0,0.35)';
+        ctx.fillRect(-bw/2+2*sc, -bh/2+2*sc, bw, bh);
+
+        // Body
+        ctx.fillStyle='#1e2a38';
+        ctx.fillRect(-bw/2,-bh/2,bw,bh);
+
+        // Role color top stripe
+        ctx.fillStyle=this.ac;
+        ctx.fillRect(-bw/2,-bh/2,bw,4*sc);
+
+        // Role color side accent
+        ctx.fillStyle=this.ac+'80';
+        ctx.fillRect(-bw/2,-bh/2+4*sc,2*sc,bh-4*sc);
+
+        // Wheels (3 pairs)
+        ctx.fillStyle='#2a3545';
+        const wheelW=4*sc, wheelH=7*sc;
+        [[-bw/2-wheelW+1*sc, -10*sc],
+         [-bw/2-wheelW+1*sc,  -1*sc],
+         [-bw/2-wheelW+1*sc,   8*sc],
+         [ bw/2-1*sc,         -10*sc],
+         [ bw/2-1*sc,          -1*sc],
+         [ bw/2-1*sc,           8*sc]
+        ].forEach(([wx,wy])=>{
+            ctx.fillRect(wx,wy,wheelW,wheelH);
+            ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.lineWidth=0.5;
+            ctx.strokeRect(wx,wy,wheelW,wheelH);
+        });
+
+        // Mast
+        ctx.strokeStyle='#3a4a5a';ctx.lineWidth=1.5*sc;
+        ctx.beginPath();ctx.moveTo(0,-bh/2);ctx.lineTo(0,-bh/2-8*sc);ctx.stroke();
+        // Antenna top dot
+        ctx.fillStyle=this.ac;
+        ctx.beginPath();ctx.arc(0,-bh/2-8*sc,2*sc,0,Math.PI*2);ctx.fill();
+
+        // ID text — bigger, clearer
+        ctx.fillStyle='#ffffff';
+        ctx.font=`bold ${Math.max(9,9*sc)}px "IBM Plex Mono"`;
+        ctx.textAlign='center';
+        ctx.textBaseline='middle';
+        ctx.fillText(this.id, 0, 3*sc);
+        ctx.textBaseline='alphabetic';
+
+        // Role tag below rover
+        const roleLabel = this.role==='KEŞF'?'KEŞİF':this.role==='REG'?'REGOLİTH':'BUZUL';
+        const tagW = (roleLabel.length * 5 + 8)*sc;
+        ctx.fillStyle='rgba(0,0,0,0.75)';
+        ctx.fillRect(-tagW/2, bh/2+3*sc, tagW, 11*sc);
+        ctx.fillStyle=this.ac;
+        ctx.font=`600 ${Math.max(7,7*sc)}px "IBM Plex Sans Condensed"`;
+        ctx.textAlign='center';
+        ctx.fillText(roleLabel, 0, bh/2+12*sc);
+
+        ctx.restore();
+    }
+
+    renderCard(){
+        let el=document.getElementById('vc-'+this.id);
+        if(!el){
+            el=document.createElement('div');
+            el.className='vcard';el.id='vc-'+this.id;
+            document.getElementById('vscroll').appendChild(el);
+        }
+        const bc=this.battery>60?'#4ab870':this.battery>30?'#c8922a':'#c04040';
+        let sc='#6a8ba8';
+        const stateDisplay = this.state==='GÖREV_TAMAM'?'ÜSSE DÖNÜYOR':this.state;
+        if(['TARAMA','KAZIYORUM','HEDEFE GİDİYOR'].includes(this.state))sc='#4ab870';
+        else if(['DÖNÜYOR','BATARYA_DÖNÜŞ','FIRTINA_DÖNÜŞ','GÖREV_TAMAM'].includes(this.state))sc='#c8922a';
+        else if(this.state==='ŞARJDA')sc='#5b9bd5';
+        else if(this.state==='TAMAMLANDI')sc='#7ab8e0';
+        else if(this.state==='FIRTINA_BEKLİYOR')sc='#c8922a';
+        const rl=this.role==='KEŞF'?'KEŞİF':this.role==='REG'?'REGOLİTH':'SU BUZULU';
+        const completeBadge = this.missionComplete
+            ?`<div style="display:flex;gap:5px;align-items:center"><span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:#4ab870;background:rgba(74,184,112,0.12);border:1px solid #4ab870;padding:2px 7px;border-radius:1px;">✓ GÖREV TAMAM</span><span class="vmode">MOD: OTONOM</span></div>`
+            :`<span class="vmode">MOD: OTONOM</span>`;
+        el.innerHTML=`
+        <div class="vaccent" style="background:${this.ac};"></div>
+        <div class="vhead">
+            <span class="vname">${this.name}</span>
+            <span class="vbat" style="color:${bc}">%${Math.floor(this.battery)}</span>
+        </div>
+        <div class="vgrid">
+            <span class="vgl">X</span><span class="vgv">${Math.round(this.x)} m</span>
+            <span class="vgl">Y</span><span class="vgv">${Math.round(this.y)} m</span>
+            <span class="vgl">HIZ</span><span class="vgv">${this.speed.toFixed(2)} m/s</span>
+            <span class="vgl">ROL</span><span class="vgv">${rl}</span>
+        </div>
+        <div class="batbar"><div class="batfill" style="width:${this.battery}%;background:${bc};"></div></div>
+        <div class="vstatus">
+            <div class="vstt">
+                <div class="vdot" style="background:${sc};box-shadow:0 0 5px ${sc};"></div>
+                <span style="color:${sc}">${stateDisplay}</span>
+            </div>
+            ${completeBadge}
+        </div>`;
+    }
+}
+
+const rovers=[
+    new Rover('ALT','ALTAY Keşif',  '#5b9bd5',4.5,'KEŞF'),
+    new Rover('TAN','TANYELI Reg.', '#c49a6c',0.6,'REG'),
+    new Rover('CIN','ÇINAR Buz',    '#6aaae0',0.6,'ICE')
+];
+
+let frame=0;
+function loop(){
+    frame++;
+
+    // Terrain background
+    ctx.fillStyle='#bfaa92';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    // Subtle patchwork
+    const step=Math.max(8,45*zoom);
+    const ox=((-camX*zoom)%step+step)%step;
+    const oy=((camY*zoom)%step+step)%step;
+    ctx.fillStyle='rgba(0,0,0,0.022)';
+    for(let gx=ox-step;gx<canvas.width+step;gx+=step){
+        for(let gy=oy-step;gy<canvas.height+step;gy+=step){
+            if(((Math.floor((gx-ox)/step)+Math.floor((gy-oy)/step))%2+2)%2===0)
+                ctx.fillRect(gx,gy,step,step);
+        }
+    }
+
+    // Grid lines
+    ctx.strokeStyle='rgba(90,70,55,0.18)';ctx.lineWidth=0.5;
+    const gs=50;
+    const gox2=Math.floor((camX-canvas.width/2/zoom)/gs)*gs;
+    const goy2=Math.floor((camY-canvas.height/2/zoom)/gs)*gs;
+    for(let wx=gox2;wx<camX+canvas.width/zoom+gs;wx+=gs){
+        const[sx]=w2s(wx,0);ctx.beginPath();ctx.moveTo(sx,0);ctx.lineTo(sx,canvas.height);ctx.stroke();
+    }
+    for(let wy=goy2;wy<camY+canvas.height/zoom+gs;wy+=gs){
+        const[,sy]=w2s(0,wy);ctx.beginPath();ctx.moveTo(0,sy);ctx.lineTo(canvas.width,sy);ctx.stroke();
+    }
+
+    // Axis
+    const[aox,aoy]=w2s(0,0);
+    ctx.strokeStyle='rgba(70,55,45,0.28)';ctx.lineWidth=1;ctx.setLineDash([5,5]);
+    ctx.beginPath();ctx.moveTo(aox,0);ctx.lineTo(aox,canvas.height);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,aoy);ctx.lineTo(canvas.width,aoy);ctx.stroke();
+    ctx.setLineDash([]);
+
+    // CRATERS — only revealed ones
+    craters.forEach(c=>{
+        if(!c.rev)return;
+        const[sx,sy]=w2s(c.x,c.y);
+        const r=c.r*zoom;
+        if(sx<-r||sx>canvas.width+r||sy<-r||sy>canvas.height+r)return;
+        const g=ctx.createRadialGradient(sx-r*0.2,sy-r*0.2,r*0.08,sx,sy,r);
+        g.addColorStop(0,`rgba(40,28,18,${0.58*c.d})`);
+        g.addColorStop(0.55,`rgba(75,55,38,${0.3*c.d})`);
+        g.addColorStop(1,'rgba(140,110,85,0)');
+        ctx.fillStyle=g;
+        ctx.beginPath();ctx.arc(sx,sy,r,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle=`rgba(160,130,100,${0.32*c.d})`;
+        ctx.lineWidth=Math.max(0.8,1.4*zoom);
+        ctx.beginPath();ctx.arc(sx,sy,r*0.8,0,Math.PI*2);ctx.stroke();
+    });
+
+    // SCAN CIRCLE — draws filled scanned area covering explorer's path
+    if(currentScanRadius>0){
+        const[scx,scy]=w2s(0,0);
+        const sr=currentScanRadius*zoom;
+
+        // Scanned area fill — darker, more visible
+        ctx.fillStyle='rgba(91,155,213,0.13)';
+        ctx.beginPath();ctx.arc(scx,scy,sr,0,Math.PI*2);ctx.fill();
+
+        // Scanned area border — solid and visible
+        ctx.strokeStyle='rgba(91,155,213,0.55)';ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(scx,scy,sr,0,Math.PI*2);ctx.stroke();
+
+        // 500m boundary ring
+        const lr=SCAN_LIMIT*zoom;
+        ctx.strokeStyle='rgba(91,155,213,0.25)';ctx.lineWidth=1.5;ctx.setLineDash([8,6]);
+        ctx.beginPath();ctx.arc(scx,scy,lr,0,Math.PI*2);ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Scan range label
+        if(currentScanRadius < SCAN_LIMIT){
+            const labelAngle = -Math.PI/4;
+            const lx = scx + Math.cos(labelAngle)*sr;
+            const ly = scy + Math.sin(labelAngle)*sr;
+            ctx.fillStyle='rgba(5,8,11,0.8)';
+            ctx.fillRect(lx-2,ly-10,56,14);
+            ctx.fillStyle='rgba(91,155,213,0.9)';
+            ctx.font=`600 9px "IBM Plex Mono"`;
+            ctx.textAlign='left';
+            ctx.fillText(`${Math.floor(currentScanRadius)}m / ${SCAN_LIMIT}m`,lx+2,ly+1);
+        }
+    }
+
+    // STORM OVERLAY
+    if(isStorm){
+        const a=0.06+0.04*Math.sin(frame*0.04);
+        ctx.fillStyle=`rgba(175,115,25,${a})`;
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+    }
+
+    // SETTLEMENT POLYGONS
+    settlementAreas.forEach((area,idx)=>{
+        if(area.length<3)return;
+        const cx2=area.reduce((s,p)=>s+p.x,0)/area.length;
+        const cy2=area.reduce((s,p)=>s+p.y,0)/area.length;
+        const sorted=[...area].sort((a,b)=>Math.atan2(a.y-cy2,a.x-cx2)-Math.atan2(b.y-cy2,b.x-cx2));
+        // Koyu dolgu
+        ctx.fillStyle='rgba(74,184,112,0.32)';
+        ctx.strokeStyle='#2ecc71';ctx.lineWidth=Math.max(2.5,3*zoom);
+        ctx.beginPath();
+        sorted.forEach((p,i)=>{
+            const[sx,sy]=w2s(p.x,p.y);i===0?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy);
+        });
+        ctx.closePath();ctx.fill();ctx.stroke();
+        // İkinci parlak iç kenarlık
+        ctx.strokeStyle='rgba(180,255,210,0.22)';ctx.lineWidth=Math.max(1,1.5*zoom);
+        ctx.beginPath();
+        sorted.forEach((p,i)=>{
+            const[sx,sy]=w2s(p.x,p.y);i===0?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy);
+        });
+        ctx.closePath();ctx.stroke();
+
+        const[lx,ly]=w2s(cx2,cy2);
+        ctx.fillStyle='rgba(5,20,12,0.92)';
+        const lw=110;ctx.fillRect(lx-lw/2,ly-24,lw,20);
+        ctx.strokeStyle='#2ecc71';ctx.lineWidth=1;
+        ctx.strokeRect(lx-lw/2,ly-24,lw,20);
+        ctx.fillStyle='#7fffb0';
+        ctx.font=`700 ${Math.max(10,11*zoom)}px "IBM Plex Sans Condensed"`;
+        ctx.textAlign='center';
+        ctx.fillText(`YERLEŞİM ${idx+1}`,lx,ly-9);
+        ctx.textAlign='left';
+    });
+
+    // RESOURCES — only show if explorer has scanned that area
+    resources.forEach(res=>{
+        if(!res.disc)return;
+        // Extra safety: only show if within scan radius
+        if(!explorerHasPassed(res.x,res.y))return;
+
+        const[sx,sy]=w2s(res.x,res.y);
+        const s=Math.max(12,14*zoom);
+
+        // Shadow
+        ctx.fillStyle='rgba(0,0,0,0.4)';
+        ctx.fillRect(sx-s/2+2,sy-s/2+2,s,s);
+
+        // Icon body
+        ctx.fillStyle=res.type==='REG'?'#c49a6c':'#6aaae0';
+        ctx.fillRect(sx-s/2,sy-s/2,s,s);
+        ctx.strokeStyle='rgba(255,255,255,0.25)';ctx.lineWidth=1;
+        ctx.strokeRect(sx-s/2,sy-s/2,s,s);
+
+        // Inner detail
+        ctx.fillStyle='rgba(255,255,255,0.15)';
+        ctx.fillRect(sx-s/2+2,sy-s/2+2,s*0.4,s*0.4);
+
+        // Type label — always visible, larger
+        ctx.fillStyle='rgba(5,8,11,0.85)';
+        const lbl=res.type==='REG'?'REG':'BUZ';
+        const lblW=lbl.length*6+8;
+        ctx.fillRect(sx-lblW/2,sy-s/2-14,lblW,12);
+        ctx.fillStyle=res.type==='REG'?'#e8c090':'#90c8f0';
+        ctx.font=`bold ${Math.max(8,8.5*zoom)}px "IBM Plex Mono"`;
+        ctx.textAlign='center';
+        ctx.fillText(lbl,sx,sy-s/2-5);
+        ctx.textAlign='left';
+    });
+
+    // MAIN STATION
+    const[msx,msy]=w2s(0,0);
+    const mr=Math.max(26,34*zoom);
+    ctx.fillStyle='#0d3460';ctx.strokeStyle='#5b9bd5';
+    ctx.lineWidth=Math.max(2.5,3*zoom);
+    ctx.beginPath();ctx.arc(msx,msy,mr,0,Math.PI*2);ctx.fill();ctx.stroke();
+    // Inner ring
+    ctx.strokeStyle='rgba(91,155,213,0.3)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(msx,msy,mr*0.75,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle='#f0f4f8';
+    ctx.font=`700 ${Math.max(9,10*zoom)}px "IBM Plex Sans Condensed"`;
+    ctx.textAlign='center';
+    ctx.fillText('ANA İSTASYON',msx,msy-3);
+    ctx.font=`${Math.max(7,8*zoom)}px "IBM Plex Mono"`;
+    ctx.fillStyle='#8ab8d8';
+    ctx.fillText('[0, 0]',msx,msy+11);
+    ctx.textAlign='left';
+
+    // ROVERS
+    rovers.forEach(r=>r.update());
+
+    // UI
+    document.getElementById('iv-r').textContent=inventory.reg;
+    document.getElementById('iv-i').textContent=inventory.ice;
+    if(inventory.reg>=100&&inventory.ice>=50){inventory.reg-=100;inventory.ice-=50;inventory.bricks++;}
+    document.getElementById('iv-b').textContent=inventory.bricks;
+    document.getElementById('sc-disp').textContent=Math.floor(currentScanRadius)+'m / '+SCAN_LIMIT+'m';
+    document.getElementById('ac-disp').textContent=rovers.filter(r=>!['TAMAMLANDI','ŞARJDA'].includes(r.state)).length;
+
+    requestAnimationFrame(loop);
+}
+
+// Clock
+setInterval(()=>{
+    const d=new Date();
+    document.getElementById('tb-time').textContent=
+        String(d.getHours()).padStart(2,'0')+':'+
+        String(d.getMinutes()).padStart(2,'0')+':'+
+        String(d.getSeconds()).padStart(2,'0')+' MSD';
+    const base=14*60+27+Math.floor(Math.random()*3)-1;
+    document.getElementById('tb-delay').textContent=Math.floor(base/60)+'m '+String(base%60).padStart(2,'0')+'s';
+    const comm=document.getElementById('comm');
+    if(isStorm&&Math.random()>0.65){
+        comm.textContent='KESİNTİLİ';comm.style.color='var(--warn)';
+    } else {
+        comm.textContent='BAĞLI';comm.style.color='var(--ok)';
+    }
+},1000);
+
+resetMission();
+loop();
+
+// ===========================================
+// Real-time WebSocket connection to YOLO Backend
+// ===========================================
+const wsURL = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws';
+const ws = new WebSocket(wsURL);
+
+ws.onmessage = function(event) {
+    const data = JSON.parse(event.data);
+    if (data.event === "new_resource") {
+        // Map Python types to JS types
+        let mappedType = (data.type === "Water_Ice") ? "ICE" : "REG";
+        
+        // Ensure no duplicate insertion near same coords within client
+        let duplicate = resources.find(r => Math.hypot(r.x - data.x, r.y - data.y) < 2.0);
+        if (!duplicate) {
+            // disc is set to true immediately because YOLO has 'scanned' it
+            resources.push({x: data.x, y: data.y, type: mappedType, claimed: false, disc: true});
+            analyzeSettlements();
+        }
+    }
+};
+
+ws.onopen = function() {
+    console.log("WebSocket connected to Python Backend!");
+};
+</script>
+</body>
+</html>
