@@ -2,8 +2,8 @@
 
 Welcome to the Al-Tech Mars Exploration project! This repository contains a fully automated, closed-loop AI software suite designed to autonomously identify critical Initial In-Situ Resource Utilization (ISRU) elements—such as Water Ice and Regolith—and deploy an autonomous rover to collect them. 
 
-## 📸 Dashboard Interface
-![Mission Control UI](dashboard_demo.png)
+## 🎥 Dashboard Interface Demo
+<video src="demo.mp4" width="100%" controls></video>
 *(Real-time Interactive Web Dashboard connected to the backend via WebSockets. It tracks visual inferences, maps dynamic ISRU clusters, and actively assigns missions to autonomous rovers.)*
 
 ## 🚀 How The System Works (Data Flow Pipeline)
